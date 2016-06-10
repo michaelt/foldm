@@ -107,7 +107,7 @@ import qualified Data.IOData as IOData
 import Control.Monad.IO.Class
 import qualified System.IO as IO
 import qualified GHC.IO.Exception as Exc
-
+import Data.Monoid (Monoid(..))
 fold :: (Foldable f) => FoldM Identity a b -> f a -> b
 fold f = runIdentity . L.foldM f
 {-#INLINE fold #-}
