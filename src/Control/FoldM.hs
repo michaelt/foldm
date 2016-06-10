@@ -72,6 +72,14 @@ module Control.FoldM (
     -- , handlesM
     , folded
 
+    -- * IO fripperies
+    , toHandle
+    , stdout
+    , stderr
+    , toHandleLn
+    , stdoutLn
+    , stderrLn
+    
     -- * Re-exports
     -- $reexports
     , module Control.Monad.Primitive
@@ -84,21 +92,21 @@ import Control.Foldl (FoldM(..),Fold(..), EndoM(..), HandlerM
                      , impurely_, hoists, random, randomN
                      , folded)
 import qualified Control.Foldl as L
--- import Control.Applicative -- (liftA2)
--- import Control.Monad ((>=>)) 
 import Data.Foldable (Foldable)
 import Control.Monad.Primitive (PrimMonad, RealWorld)
 import Data.Vector.Generic (Vector, Mutable)
 import qualified Data.Sequence as Seq
 import Data.Sequence ((|>))
--- import Data.Vector.Generic.Mutable (MVector)
 import Data.Functor.Identity (Identity(..))
 import Prelude hiding (
     head, last, null, length, any, all, and, or,
     maximum, minimum, elem, notElem, sum, product,
     mapM_)
 import qualified Data.Foldable as F
-
+import qualified Data.IOData as IOData
+import Control.Monad.IO.Class
+import qualified System.IO as IO
+import qualified GHC.IO.Exception as Exc
 
 fold :: (Foldable f) => FoldM Identity a b -> f a -> b
 fold f = runIdentity . L.foldM f
@@ -395,3 +403,22 @@ handles :: Monad m => HandlerM m a b -> FoldM m b r -> FoldM m a r
 handles = L.handlesM 
 {-#INLINE handles #-}
 
+-- simplified IO nonsense
+
+toHandle :: (IOData.IOData a, MonadIO m) => IO.Handle -> FoldM m a ()
+toHandle h = FoldM (\() bs -> IOData.hPut h bs) (return ()) return 
+
+stdout :: (IOData.IOData a, MonadIO m) => FoldM m a ()
+stdout = toHandle IO.stdout
+
+stderr :: (IOData.IOData a, MonadIO m) => FoldM m a ()
+stderr = toHandle IO.stderr
+
+toHandleLn :: (IOData.IOData a, MonadIO m) => IO.Handle -> FoldM m a ()
+toHandleLn h = FoldM (\() bs -> IOData.hPutStrLn h bs) (return ()) return
+
+stdoutLn :: (IOData.IOData a, MonadIO m) => FoldM m a ()
+stdoutLn = toHandleLn IO.stdout
+
+stderrLn :: (IOData.IOData a, MonadIO m) => FoldM m a ()
+stderrLn = toHandleLn IO.stderr
